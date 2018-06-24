@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="shiro.mybatis.dao.UserDao">
+
+	<insert id="createUser">
+		INSERT INTO t_user(username, password, salt, roleIds)
+		VALUES
+		(#{user.username},#{user.password},#{user.salt},#{user.roleIdstr})
+	</insert>
+
+	<update id="updateUser">
+		<if test="user.id != null and user.id != 0">
+			UPDATE t_user
+			SET username = #{user.username},
+			password =
+			#{user.password},
+			salt = #{user.salt},
+			roleIds = #{user.roleIdstr}
+			WHERE
+			id = #{user.id}
+		</if>
+	</update>
+
+	<select id="findAll" resultType="shiro.entity.User">
+		SELECT *
+		FROM t_user
+	</select>
+
+
+	<select id="findOne" resultType="shiro.entity.User">
+		select *
+		FROM t_user u
+		<where>
+			AND u.username = #{id}
+		</where>
+	</select>
+
+	<select id="findByUsername" resultType="shiro.entity.User">
+		select *
+		FROM t_user u
+		<where>
+			AND u.username = #{username}
+		</where>
+	</select>
+
+</mapper>

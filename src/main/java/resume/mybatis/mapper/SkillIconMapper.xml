@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="resume.mybatis.dao.SkillDao">
+
+	<select id="getSkillList" resultType="resume.entity.SkillIcon">
+		SELECT
+		*
+		FROM t_skillicon
+
+	</select>
+
+	<insert id="insertSkillList">
+		<foreach collection="skillList" item="skill" separator=";">
+			insert
+			into t_skillicon(id,data,skillName)
+			values(#{skill.id},#{skill.data},#{skill.skillName})
+		</foreach>
+	</insert>
+
+</mapper>

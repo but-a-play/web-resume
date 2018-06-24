@@ -1,0 +1,22 @@
+/**
+ * 首页js文件
+ * hr.info:存放全局通用属性(常量等)
+ * 页面事件结构为 hr.hr_detail_event()
+ * 变量命名规范：
+ * 1一律使用下横杆 _ 号来分隔英文单词，而不是采用驼峰式写法。
+ 2常量（声明后不会变化的变量）命名全部字母统一大写，用下横杆 _ 分隔英文
+ 3函数 / 方法 内 局部变量的命名，添加前缀 _ 号
+ 4声明变量赋值 jquery 对象或 js 对象时，添加变量名前缀 $ 符号
+ * 方法命名规范：按功能命名，命名清晰易懂，规则按统一命名方式
+ */
+var index = index || {};
+index.event = function(){};
+$(function () {
+	$(".post_resume").attr("data-index","true");
+	$.get("/order/up_vip/",function(result){
+		if(result!=null){
+			$(document.body).before(result);
+		}
+	});
+    common.main.create_resume();
+})

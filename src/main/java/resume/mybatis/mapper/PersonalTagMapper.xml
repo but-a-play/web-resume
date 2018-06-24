@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="resume.mybatis.dao.TagsDao">
+
+	<select id="getTagList" resultType="resume.entity.PersonalTag">
+		SELECT
+		*
+		FROM tb_personalTag
+
+	</select>
+
+	<insert id="insertTagList">
+		<foreach collection="tagList" item="tag" separator=";">
+			insert
+			into
+			tb_personalTag(id,data,tagName)
+			values(#{tag.id},#{tag.data},#{tag.tagName})
+		</foreach>
+	</insert>
+
+</mapper>

@@ -1,0 +1,317 @@
+/**
+ * ppt商城 js操作
+ * @author  wiley cheung
+ * 
+ */
+var pptmall = pptmall || {};
+pptmall.main = pptmall.main || {};
+pptmall.info={
+	//异步加载
+	isReload:true,//是有已加载，默认是已加载
+	isMaxPage:false,//是否是最大页码
+	reloadWallfulPage:2//页码
+}
+pptmall.main = {
+	event_: function () {//事件绑定
+		//搜索
+		$(".result-searchItem input,.ppt-searchBar input").on('keypress',function(event){//首页搜索，搜索页搜索
+            if(event.keyCode == "13"){
+                pptmall.main.pdSearch(this);
+            }
+        });
+        $(".result-searchItem a").click(function(){
+			pptmall.main.pdSearch($(".result-searchItem input"));
+		});	
+		//筛选（推荐、最新、销量、人气、价格）
+		$(".text-classify a").click(function(){
+			var currentDataParam = $(this).parent().find(".text-classifyClick").attr("data_param");	
+			var dataParam = $(this).attr("data_param");
+			var url = pptmall.main.getFilterUrl(currentDataParam, dataParam);
+			if(pptmall.main.is_empty(url)){
+				location.href=window.location.pathname;
+			}
+			location.href = url;
+		});
+		//筛选（色系）
+		$(".select-classify .colorSelect li").click(function(){
+			var currentDataParam = $(this).parent().find("li[data-color='click']").attr("data_param");
+			var dataParam;
+			if(pptmall.main.is_empty($(this).attr("data-color"))){//选中状态
+				dataParam = $(this).attr("data_param");
+			}else{//取消选中状态
+			}
+			var url = pptmall.main.getFilterUrl(currentDataParam, dataParam);
+			location.href = url;
+		});
+		//筛选（ppt类型）
+		$(".select-classify .typeSelect li").click(function(){
+			var currentDataParam = $(this).parent().find("li[data-type='click']").attr("data_param");
+			var dataParam;
+			if(pptmall.main.is_empty($(this).attr("data-type"))){//选中状态
+				dataParam = $(this).attr("data_param");
+			}else{//取消选中状态
+			}
+			var url = pptmall.main.getFilterUrl(currentDataParam, dataParam);
+			location.href = url;
+		});
+		//筛选（ppt比例）
+		$(".select-classify .scaleSelect li").click(function(){
+			var currentDataParam = $(this).parent().find("li[data-scale='click']").attr("data_param");
+			var dataParam;
+			if(pptmall.main.is_empty($(this).attr("data-scale"))){//选中状态
+				dataParam = $(this).attr("data_param");
+			}else{//取消选中状态
+			}
+			var url = pptmall.main.getFilterUrl(currentDataParam, dataParam);
+			location.href = url;
+		});
+		//商品图片滚动
+		var ImgDown , ImgUp;
+        $("body").on('mouseenter','.imgUp',function(){
+            var $this = $(this).parent().find("img"), ImgTop = $this.css("top").substring(0,$this.css("top").indexOf("px"));
+            clearInterval(ImgUp);
+            ImgUp = setInterval(function(){
+                if(ImgTop < 0){
+                    ImgTop++;
+                    $this.css("top",ImgTop+"px");
+                }else{
+                    clearInterval(ImgUp);
+                }
+            },5)
+        });
+        $("body").on("mouseleave ",".imgUp",function(){
+            clearInterval(ImgUp)
+        });
+        $("body").on('mouseenter','.imgDown',function(){
+            var $this = $(this).parent().find("img"), ImgTop = $this.css("top").substring(0,$this.css("top").indexOf("px")), ImgH = $this.height();
+            clearInterval(ImgDown);
+            ImgDown = setInterval(function(){
+                if($this.height() > $this.parent().height()){
+                    if(-ImgTop == (ImgH - $this.parent().height())){
+                        clearInterval(ImgDown);
+                    }else{
+                        ImgTop--;
+                        $this.css("top",ImgTop+"px");
+                    }
+                }
+            },5)
+        });
+        $("body").on("mouseleave ",".imgDown",function(){
+            clearInterval(ImgDown)
+        });
+	},
+	product_detail_event:function(){
+		$("http://static.500d.me/resources/500d/ppt/js/img.lazy").lazyload();
+        //购买按钮
+		$("#pay_product_btn").click(function(){
+			if($.checkLogin()) {
+				check_coin();//检查丁币
+				$("html").addClass("open");
+				$("#product_payMethod").show();
+				$(".jl-temp-zxModalBg").stop().show();
+			} else {
+				show_login_modal();
+			}
+		})
+		setTimeout(function(){
+			//如果具有vip权限，按钮隐藏
+			if(!$("#ppt_template_download").hasClass("wbd-vip-lock")){
+				$("#pay_product_btn").hide();
+				$("#ppt_template_download").addClass("free_download");
+			}
+		},300)
+		//会员免费下载按钮
+		$(document).on("click","#ppt_template_download:not(.wbd-vip-lock)",function(){
+			var _id=$(this).attr("data-id");
+			//检查是否超过限制
+			var result="0";
+			$.ajax({
+				url: wbdcnf.base + "/order/check_product_downtimes/",
+				type: "GET",
+				dataType: "json",
+				data:{"pid":_id},
+				cache: false,
+				async: false,
+				success: function(data) {
+					result = data;
+				}
+			});
+			if(result.type=="error"&&result.content=="0"){
+	     		//未登录
+	         	show_login_modal();
+	        }else if(result.type=="error"&&result.content=="1"){
+	        	//没有权限
+	        	 common.main.vip_opt_tips("template");
+	        }else if(result.type=="error"&&result.content=="-1"){
+	        	//商品不存在
+				layer.msg("商品不能存在，请刷新重试");
+	        }else if(result.type=="error"&&result.content=="3"){
+	        	//提示超过每天限制
+				common.main.temp_download_modal();
+	        }else if(result.type=="success"){
+	        	//可以下载
+				window.open(result.content);
+	        }
+		});
+        $(window).scroll(function(){
+            var $de =$(".moreDetails").offset().top + $(".moreDetails").scrollTop()-390;
+            if ($(window).scrollTop() >= 260) {
+                $(".details-content .priceBar").css({
+                    position:'fixed',
+                    top:'70px',
+                    width:'340px',
+                    'z-index':'99',
+                    'box-shadow':'0px 12px 13px -1px rgba(0,0,0,0.1)',
+                    background:'#fff'
+                });
+                $(".details-content .hotBar").css({
+                    'margin-top': '473px'
+
+                })
+            }
+            if ($(window).scrollTop() <= 260 || $(window).scrollTop() >= $de){
+                $(".details-content .priceBar").attr("style"," ");
+                $(".details-content .hotBar").attr("style"," ");
+            }
+        });
+	},
+	init_:function(){//初始化
+		pptmall.main.event_();
+		//导航选中状态
+		var pathName = location.pathname;
+		if(pathName.indexOf("moban") > 0 || pathName.indexOf("designer") > 0 || pathName.indexOf("ppt") > 0 || pathName.indexOf("search") > 0) {
+			pptmall.main.navActivate(1);
+		}else {
+			pptmall.main.navActivate(0);
+		}
+		$(".headcell .cell_more").each(function(){
+			var $this = $(this).parents(".headcell");
+            if($this.find(".headClick").index() != 0){
+                var pH = $this.find("p").css('height');
+                $this.css('height',pH);
+            }else{
+                $this.css('height','47px');
+            }
+		})
+	},
+	//选中样式
+	navActivate:function(index) {
+		$(".nav-li").removeClass("current").eq(index).addClass("current");
+	},
+	getFilterUrl:function(currentDataParam,dataParam){//获取筛选url（推荐、最新、销量、人气、价格、色系、ppt类型、ppt比例）
+		var url = window.location.href;
+		if(pptmall.main.is_empty(currentDataParam) || url.indexOf(currentDataParam) == -1){//添加参数
+			if(!pptmall.main.is_empty(dataParam)){//参数值是否为空
+				url+= url.indexOf("?") == -1? "?" + dataParam : "&" + dataParam;
+			}
+		}else{//替换参数
+			if(!pptmall.main.is_empty(dataParam)){//参数值不为空
+				url=url.replace(currentDataParam, dataParam);
+			}else{//参数值为空
+				url=url.replace("&"+currentDataParam, "");//如果非首个参数，使用&开头，尝试替换
+				url=url.replace(currentDataParam, "");
+			}
+		}
+		url=url.replace("?&", "?");//处理如果替换参数为首个参数会?&会并在一起
+		if(url.indexOf("?")+1 == url.length){//处理最后为?的值
+			url=url.replace("?","");
+		}
+		return url;
+	},
+	pdSearch:function(input){//搜索产品 input（keyword文本框）
+		var url = $(input).attr("data_url");
+		var newkeyword = $(input).val();
+		var oldkeyword = $(input).attr("data_oldkeyword");
+		if(pptmall.main.is_empty(oldkeyword) || url.indexOf(oldkeyword) == -1){//添加参数
+			if(!pptmall.main.is_empty(newkeyword)){//参数值是否为空
+				url+= url.indexOf("?") == -1 ? "?keyword=" + newkeyword : "&keyword=" + newkeyword;
+			}
+		}else{//替换参数
+			if(!pptmall.main.is_empty(newkeyword)){//参数值不为空
+				url=url.replace(oldkeyword, "keyword=" + newkeyword);
+			}else{//参数值为空
+				url=url.replace("&"+oldkeyword, "");//如果非首个参数，使用&开头，尝试替换
+				url=url.replace(oldkeyword, "");
+			}
+		}
+		url=url.replace("?&", "?");//处理如果替换参数为首个参数会?&会并在一起
+		if(url.indexOf("?")+1 == url.length){//处理最后为?的值
+			url=url.replace("?","");
+		}
+		location.href = url;
+	},
+	tagFilter:function(){//标签筛选
+		var params = window.location.search;
+		var tagCodes = [];
+		$(".respondItem").each(function(i,item){
+			var tagCode = $(item).attr("data-tagcode");
+			if(!pptmall.main.is_empty(tagCode)){
+				tagCodes.push(tagCode);
+			}
+		});
+		var url = "/ppt/moban/"
+		var tagCode = tagCodes.join("-");
+		if(!pptmall.main.is_empty(tagCode)){
+			url+= (tagCode + "/");
+		}
+		url+=params;
+		location.href=url;
+	},
+	lazyLoadData:function(url){
+		if(!pptmall.main.is_empty(url)){
+			$.get(
+				url,
+				{
+					pageNumber:pptmall.info.reloadWallfulPage
+				},
+				function(data){
+	            	pptmall.info.isReload=true;
+		            if(data.indexOf("div")==-1){
+		            	pptmall.info.isMaxPage=true;
+		            }else{
+		            	$("#ppt-listItem .listItem:last").before(data);
+		            }
+		            pptmall.info.reloadWallfulPage++;
+	 			}
+	 		);
+		}
+	},
+	lazyLoadInit:function(url){//异步加载列表动作初始化
+		window.onscroll = function(){
+			if(pptmall.main.getCheck()&&pptmall.info.isReload&&!pptmall.info.isMaxPage){
+				pptmall.info.isReload=false;
+				pptmall.main.lazyLoadData(url);
+			}
+		}
+	},
+	getCheck:function(){
+		var documentH = document.documentElement.clientHeight;
+		var scrollH = document.documentElement.scrollTop || document.body.scrollTop;
+		return documentH+scrollH>=pptmall.main.getLastH() ?true:false;
+	},
+	getLastH:function(){//ppt-listItem为ul的id，listItem为li的class
+		var wrap = document.getElementById('ppt-listItem');
+		var boxs = pptmall.main.getClass(wrap,'listItem');
+		return boxs[boxs.length-1].offsetTop+boxs[boxs.length-1].offsetHeight;
+	},
+	getClass:function(wrap,className){
+		var obj = wrap.getElementsByTagName('*');
+		var arr = [];
+		for(var i=0;i<obj.length;i++){
+			if(obj[i].className == className){
+				arr.push(obj[i]);
+			}
+		}
+		return arr;
+	},
+	is_empty:function(str){
+    	if(str==null||str==""||str==undefined){
+    		return true;
+    	}else{
+    		return false;
+    	}
+    }
+}
+$(function(){
+	pptmall.main.init_();//初始化
+});
